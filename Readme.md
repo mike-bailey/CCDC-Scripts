@@ -1,8 +1,7 @@
 A collection of cyber security scripts.
 
 CPVII Scripts
-Use of another team's scripts in CPVII is an ethical violation. See uscyberpatriot.org for more.
-They're extremely flawed anyway and may terminate given certain unmet parameters known only to the developer
+Please note there's conflicting rules about scripts. I'm not liable if you read the rulebook, make any assertions on your own, use them and get disqualified. The rule is potentially going to clarified/rewritten by the next competition period anyway so it's a non-argument.
 
 Main Script:
 Turns off User Account Control, 
