@@ -1,7 +1,7 @@
 A collection of cyber security scripts.
 
 CPVII Scripts
-Please note there's conflicting rules about scripts. I'm not liable if you read the rulebook, make any assertions on your own, use them and get disqualified. The rule is potentially going to clarified/rewritten by the next competition period anyway so it's a non-argument.
+Please note there's conflicting rules about scripts. I'm not liable if you read the rulebook, make any assertions on your own, use them and get disqualified based on a different interpretation of the rules. The rule is potentially going to clarified/rewritten by the next competition period anyway so it's a non-argument.
 
 Main Script:
 Turns off User Account Control, 
