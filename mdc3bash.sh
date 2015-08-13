@@ -178,18 +178,7 @@ if [ $?==0 ]; then
 		break>> /dev/null
 
 fi
-grep NOPASSWD /etc/sudoers
-if [ $?==0 ]; then
-               tits=$(grep NOPASSWD /etc/sudoers)
-		sed -i 's/$tits/ /g' /etc/sudoers
-		echo $(date): NOPASSWD rule detected >> /var/log/mikescript.log
-     	        msg=$(echo SUDOERS NOPASSWD rule removed | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g'  )
-		break>> /dev/null
 
-fi
-cd /etc/sudoers.d && ls /etc/sudoers.d | grep -v cyberpatriot | grep -v scor | xargs rm
-     	        msg=$(echo Removed any sudoers.d rules other than cyberpatriot | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g'  )
-		break>> /dev/null
 
 cat /etc/apt/apt.conf.d/10periodic | grep APT::Periodic::Update-Package-Lists | grep 0 >> /dev/null
 if [ $?==0 ]; then
