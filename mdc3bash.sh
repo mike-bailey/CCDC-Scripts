@@ -25,8 +25,7 @@ echo fe00::0 ip6-localnet >> /etc/hosts
 echo ff00::0 ip6-mcastprefix >> /etc/hosts
 echo ff02::1 ip6-allnodes >> /etc/hosts
 echo ff02::2 ip6-allrouters >> /etc/hosts
-     	        msg=$(echo HOSTS file cleared | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g'  )
-		break>> /dev/null
+
 echo $(date): Verifying an internet connection with aptitude >> /var/log/mikescript.log
 apt-get install cowsay -y &> /dev/null
 if [ "$?" -eq "1" ]; then
@@ -54,10 +53,7 @@ add-apt-repository "deb http://archive.canonical.com/ubuntu precise partner"
 add-apt-repository "deb http://archive.ubuntu.com/ubuntu precise multiverse main universe restricted"
 add-apt-repository "deb http://security.ubuntu.com/ubuntu/ precise-security universe main multiverse restricted"
 add-apt-repository "deb http://archive.ubuntu.com/ubuntu precise-updates universe main multiverse restricted"
-if [ $? -eq 0 ]; then
-	msg=apt%20repositories%20successfully%20added
-	break
-fi
+
 echo $(date): Finished adding repos >> /var/log/mikescript.log
 apt-get update &> /dev/null
 if [ $? -eq 1 ]; then
@@ -115,10 +111,6 @@ else
 	read readmeloc
 fi
 echo $readmeloc locked in
-if [ $? -eq 0 ]; then
-	msg=$(echo $readmeloc | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g' )%20identified%20as%20readme
-	break>> /dev/null
-fi
 echo $(date): $readmeloc is located readme >> /var/log/mikescript.log
 cut -d: -f1,3 /etc/passwd | egrep ':[0-9]{4}$' | cut -d: -f1 > usersover1000
 echo root >> usersover1000
@@ -131,12 +123,11 @@ do
 		else
 			echo Rogue user $ScottStork detected
 			echo Delete? \(Y\/N\)
-			msg=$(echo $ScottStork rogue user detected. requires immediate user intervention. | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g' )
-			break>> /dev/null
 
 			read yorn
 			if [ "$yorn" = "Y" ]; then
 				userdel $ScottStork
+				echo $(date): $ScottStork has been deleted >> /var/log/mikescript.log
 			fi
 		fi
 	fi
@@ -148,8 +139,6 @@ cat /etc/ssh/sshd_config | grep PermitRootLogin | grep yes
 if [ $?==0 ]; then
                 sed -i 's/PermitRootLogin yes/PermitRootLogin no/g' /etc/ssh/sshd_config
                	echo $(date): PermitRootLogin rule detected in SSH >> /var/log/mikescript.log
-           	msg=$(echo PermitRootLogin rule changed | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g' )
-		break>> /dev/null
 
 fi
 cat /etc/ssh/sshd_config | grep Protocol | grep 1
@@ -157,16 +146,12 @@ if [ $?==0 ]; then
                 sed -i 's/Protocol 2,1/Protocol 2/g' /etc/ssh/sshd_config
                 sed -i 's/Protocol 1,2/Protocol 2/g' /etc/ssh/sshd_config
                	echo $(date): Protocol rule detected in SSH >> /var/log/mikescript.log
-        	msg=$(echo SSH Protocol changed to exclusively 1 | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g'  )
-		break>> /dev/null
 
 fi
 grep X11Forwarding /etc/ssh/sshd_config | grep yes
 if [ $?==0 ]; then
                 sed -i 's/X11Forwarding yes/X11Forwarding no/g' /etc/ssh/sshd_config
                	echo $(date): X11Forwarding rule detected in SSH >> /var/log/mikescript.log
-     	        msg=$(echo X11Forwarding rule changed to no | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g'  )
-		break>> /dev/null
 
 fi
 # Sudoers - require password
@@ -174,8 +159,6 @@ grep PermitEmptyPasswords /etc/ssh/sshd_config | grep yes
 if [ $?==0 ]; then
                 sed -i 's/PermitEmptyPasswords yes/PermitEmptyPasswords no/g' /etc/ssh/sshd_config
                	echo $(date): PermitEmptyPasswords rule detected in SSH >> /var/log/mikescript.log
-     	        msg=$(echo PermitEmptyPasswords rule changed to no | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g'  )
-		break>> /dev/null
 
 fi
 
@@ -188,12 +171,8 @@ if [ $?==0 ]; then
 fi
 /usr/lib/lightdm/lightdm-set-defaults -l false
 if [ $?==0 ]; then
-     	        msg=$(echo Set allow guest to false | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g' )
-		break>> /dev/null
+	echo $(date): Disabled guest >> /var/log/mikescript.log
 fi
-	echo "exit 0" > /etc/rc.local
-	     	        msg=$(echo X11Forwarding rule changed to exclusively 1 | sed 's/\//%2F/g' | sed 's/\./%2E/g' )
-		break>> /dev/null
 
 # Get rid of and replace any UID that is equal to 0
 # Gives it a big-ass new UID, throws a nonfatal error or two but lol idc
@@ -202,8 +181,6 @@ while read p <&3; do
         useruid=$RANDOM$RANDOM
         sed -i 's/'$p':x:0'/$p':x:'$useruid'/g' /etc/passwd
         echo $(date): $p Rogue UID detected >> /var/log/mikescript.log
-        msg=$(echo Rogue root UID detected | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g' )
-	break>> /dev/null
 
 done 3< /tmp/blackthought
 
