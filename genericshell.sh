@@ -1,5 +1,17 @@
 #!/bin/bash
 # Genericized linux.sh for "other" competitions
+if [ $(which apt-get) ];
+then
+	pkgmgr="apt-get"
+fi
+if [ $(which yum) ];
+then
+	pkgmgr="yum"
+fi
+if [ $(which pacman) ];
+then
+	pkgmgr="pacman"
+fi
 mv /var/log/mikescript.log /var/log/mikescript-cached-$RANDOM$RANDOM.log
 echo $(date): Any previous logfiles cached elsewhere >> /var/log/mikescript.log
 echo $(date): Script was initialized >> /var/log/mikescript.log
@@ -8,56 +20,67 @@ if [[ $EUID -ne 0 ]]; then
    echo $(date): Script was not run as root >> /var/log/mikescript.log
    exit 1
 fi
+
 echo "Clearing HOSTS file"
 echo $(date): Clearing HOSTS file >> /var/log/mikescript.log
-echo 127.0.0.1	localhost > /etc/hosts
-echo 127.0.1.1	ubuntu  >> /etc/hosts
+if [ -a /etc/hosts ]; then
+	echo 127.0.0.1	localhost > /etc/hosts
+	echo ::1     ip6-localhost ip6-loopback >> /etc/hosts
+	echo fe00::0 ip6-localnet >> /etc/hosts
+	echo ff00::0 ip6-mcastprefix >> /etc/hosts
+	echo ff02::1 ip6-allnodes >> /etc/hosts
+	echo ff02::2 ip6-allrouters >> /etc/hosts
+fi
+echo $(date): Verifying an internet connection with curl >> /var/log/mikescript.log
+apt-get install 
+if [ -d /var/log/apt ]; then
+	cd /var/log/apt
+	gunzip history.log.*.gz
+	cat history* | grep Commandline | grep -v pastebinit | grep -v cowsay | sed 's/Commandline\: apt-get//g' | sed 's/remove/removed/g' | sed 's/install/installed/g' | sed 's/purge/purged/g' > /tmp/pasted
+	echo Installed packages since dawn of time:
+	cat /tmp/pasted
+fi
 
-echo ::1     ip6-localhost ip6-loopback >> /etc/hosts
-echo fe00::0 ip6-localnet >> /etc/hosts
-echo ff00::0 ip6-mcastprefix >> /etc/hosts
-echo ff02::1 ip6-allnodes >> /etc/hosts
-echo ff02::2 ip6-allrouters >> /etc/hosts
-     	        msg=$(echo HOSTS file cleared | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g'  )
-		break>> /dev/null
-echo $(date): Verifying an internet connection with aptitude >> /var/log/mikescript.log
-apt-get install cowsay -y &> /dev/null
-if [ "$?" -eq "1" ]; then
-   echo "This script cannot access aptitude properly."
-   echo $(date): Apititude check failed >> /var/log/mikescript.log
-   exit 1
-fi
-cd /var/log/apt
-gunzip history.log.*.gz
-cat history* | grep Commandline | grep -v pastebinit | grep -v cowsay | sed 's/Commandline\: apt-get//g' | sed 's/remove/removed/g' | sed 's/install/installed/g' | sed 's/purge/purged/g' > /tmp/pasted
+#This needs rebuilt for multiple histories
 
-cat $(locate bash_history) > /tmp/usershistory
+#cat $(locate bash_history) > /tmp/usershistory
+#echo Printing user history
+#cat /tmp/userhistory
 
-yum repolist all  &> /dev/null
-if [[ $? -eq 0 ]]; then
-    pkgmgr="yum"
-fi
-apt-get -h &> /dev/null
-if [[ $? -eq 0 ]]; then
-    pkgmgr="apt"
-    echo $(date): $pkgmgr identified as package manager >> /var/log/mikescript.log
-fi
-cat /etc/*-release | grep Ubuntu
-if [ $? -eq 0 ]; then
-  add-apt-repository "deb http://archive.canonical.com/ubuntu precise partner"
-  add-apt-repository "deb http://archive.ubuntu.com/ubuntu precise multiverse main universe restricted"
-  add-apt-repository "deb http://security.ubuntu.com/ubuntu/ precise-security universe main multiverse restricted"
-  add-apt-repository "deb http://archive.ubuntu.com/ubuntu precise-updates universe main multiverse restricted"
-fi
+#cat /etc/*-release | grep Ubuntu | grep -i precise
+#if [ $? -eq 0 ]; then
+#  add-apt-repository "deb http://archive.canonical.com/ubuntu precise partner"
+#  add-apt-repository "deb http://archive.ubuntu.com/ubuntu precise multiverse main universe restricted"
+#  add-apt-repository "deb http://security.ubuntu.com/ubuntu/ precise-security universe main multiverse restricted"
+#  add-apt-repository "deb http://archive.ubuntu.com/ubuntu precise-updates universe main multiverse restricted"
+#fi
 
 echo $(date): Finished adding repos >> /var/log/mikescript.log
-apt-get update &> /dev/null
-if [ $? -eq 1 ]; then
-	echo $(date): Finished updating package lists with errors >> /var/log/mikescript.log
-else
-	echo $(date): Finished updating package lists successfully >> /var/log/mikescript.log
+if [ $pkgmgr == "apt-get" ]; then
+	apt-get update
+	apt-get upgrade
+if
+if [ $pkgmgr == "yum" ]; then
+	yum update
 fi
+if [ $pkgmgr == "pacman" ]; then
+	pacman -Syy
+	pacman -Su
+fi
+
 echo pkgmgr is $pkgmgr
+locate -h &> /dev/null
+if [ $? -ne 0 ]; then
+	if [ $pkgmgr  == "apt-get" ]; then
+		apt-get install mlocate -y
+	fi
+	if [ $pkgmgr == "yum" ]; then
+		yum -y install mlocate
+	fi
+	if [ $pkgmgr == "pacman" ]; then
+		pacman -S mlocate --noconfirm
+	fi
+fi
 updatedb
 cut -d: -f1,3 /etc/passwd | egrep ':[0-9]{4}$' | cut -d: -f1 > usersover1000
 echo root >> usersover1000
@@ -80,9 +103,9 @@ do
 		fi
 	fi
 done
-
+sshconfig=$(find / -name sshd_config)
 # SSH Server Configuration
-cat /etc/ssh/sshd_config | grep PermitRootLogin | grep yes
+cat $sshconfig | grep PermitRootLogin | grep yes
 if [ $?==0 ]; then
                 sed -i 's/PermitRootLogin yes/PermitRootLogin no/g' /etc/ssh/sshd_config
                	echo $(date): PermitRootLogin rule detected in SSH >> /var/log/mikescript.log
@@ -90,49 +113,44 @@ if [ $?==0 ]; then
 		break>> /dev/null
 
 fi
-cat /etc/ssh/sshd_config | grep Protocol | grep 1
+cat $sshconfig | grep Protocol | grep 1
 if [ $?==0 ]; then
                 sed -i 's/Protocol 2,1/Protocol 2/g' /etc/ssh/sshd_config
                 sed -i 's/Protocol 1,2/Protocol 2/g' /etc/ssh/sshd_config
                	echo $(date): Protocol rule detected in SSH >> /var/log/mikescript.log
-        	msg=$(echo SSH Protocol changed to exclusively 1 | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g'  )
-		break>> /dev/null
-
 fi
-grep X11Forwarding /etc/ssh/sshd_config | grep yes
+grep X11Forwarding $sshconfig | grep yes
 if [ $?==0 ]; then
                 sed -i 's/X11Forwarding yes/X11Forwarding no/g' /etc/ssh/sshd_config
                	echo $(date): X11Forwarding rule detected in SSH >> /var/log/mikescript.log
-     	        msg=$(echo X11Forwarding rule changed to no | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g'  )
-		break>> /dev/null
-
 fi
 # Sudoers - require password
-grep PermitEmptyPasswords /etc/ssh/sshd_config | grep yes
+grep PermitEmptyPasswords $sshconfig | grep yes
 if [ $?==0 ]; then
                 sed -i 's/PermitEmptyPasswords yes/PermitEmptyPasswords no/g' /etc/ssh/sshd_config
                	echo $(date): PermitEmptyPasswords rule detected in SSH >> /var/log/mikescript.log
-     	        msg=$(echo PermitEmptyPasswords rule changed to no | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g'  )
-		break>> /dev/null
-
 fi
 grep NOPASSWD /etc/sudoers
 if [ $?==0 ]; then
-               tits=$(grep NOPASSWD /etc/sudoers)
+
+		tits=$(grep NOPASSWD /etc/sudoers)
 		sed -i 's/$tits/ /g' /etc/sudoers
 		echo $(date): NOPASSWD rule detected >> /var/log/mikescript.log
      	        msg=$(echo SUDOERS NOPASSWD rule removed | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g'  )
 		break>> /dev/null
-
 fi
-cd /etc/sudoers.d && ls /etc/sudoers.d | grep -v cyberpatriot | grep -v scor | xargs rm
-     	        msg=$(echo Removed any sudoers.d rules other than cyberpatriot | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g'  )
-		break>> /dev/null
-
-cat /etc/apt/apt.conf.d/10periodic | grep APT::Periodic::Update-Package-Lists | grep 0 >> /dev/null
-if [ $?==0 ]; then
-	sed -i 's/APT::Periodic::Update-Package-Lists "0"/APT::Periodic::Update-Package-Lists "1"/g' /etc/apt/apt.conf.d/10periodic
-	echo $(date): Periodic Updates enabled >> /var/log/mikescript.log
+ls -la /etc/sudoers.d
+echo Are you sure you want to remove the following sudoers rules? (y/N)
+read prompt
+if [ $prompt == "y" ]; then
+	cd /etc/sudoers.d && ls /etc/sudoers.d | xargs rm
+fi
+if [ $pkgmgr == "apt-get" ]; then
+	cat /etc/apt/apt.conf.d/10periodic | grep APT::Periodic::Update-Package-Lists | grep 0 >> /dev/null
+	if [ $?==0 ]; then
+		sed -i 's/APT::Periodic::Update-Package-Lists "0"/APT::Periodic::Update-Package-Lists "1"/g' /etc/apt/apt.conf.d/10periodic
+		echo $(date): Periodic Updates enabled >> /var/log/mikescript.log
+	fi
 fi
 if [ -e /usr/lib/lightdm/lightdm-set-defaults ]; then
   /usr/lib/lightdm/lightdm-set-defaults -l false
