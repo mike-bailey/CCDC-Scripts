@@ -6,52 +6,107 @@ if [[ $EUID -ne 0 ]]; then
    echo $(date): Script was not run as root >> /var/log/mikescript.log
    exit 1
 fi
-echo "Clearing HOSTS file"
-echo $(date): Clearing HOSTS file >> /var/log/mikescript.log
-echo 127.0.0.1	localhost > /etc/hosts
-echo 127.0.1.1	ubuntu  >> /etc/hosts
-
-echo ::1     ip6-localhost ip6-loopback >> /etc/hosts
-echo fe00::0 ip6-localnet >> /etc/hosts
-echo ff00::0 ip6-mcastprefix >> /etc/hosts
-echo ff02::1 ip6-allnodes >> /etc/hosts
-echo ff02::2 ip6-allrouters >> /etc/hosts
-     	        msg=$(echo HOSTS file cleared | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g'  )
-		break>> /dev/null
-echo $(date): Verifying an internet connection with aptitude >> /var/log/mikescript.log
-apt-get install cowsay -y &> /dev/null
-if [ "$?" -eq "1" ]; then
-   echo "This script cannot access aptitude properly."
-   echo $(date): Apititude check failed >> /var/log/mikescript.log
-   exit 1
+if [ -s /etc/hosts ]; then
+	echo "Clearing HOSTS file"
+	echo $(date): Clearing HOSTS file >> /var/log/mikescript.log
+	echo 127.0.0.1	localhost > /etc/hosts
+	echo ::1     ip6-localhost ip6-loopback >> /etc/hosts
+	echo fe00::0 ip6-localnet >> /etc/hosts
+	echo ff00::0 ip6-mcastprefix >> /etc/hosts
+	echo ff02::1 ip6-allnodes >> /etc/hosts
+	echo ff02::2 ip6-allrouters >> /etc/hosts
 fi
-apt-get install pastebinit -y
-cd /var/log/apt
-gunzip history.log.*.gz
-cat history* | grep Commandline | grep -v pastebinit | grep -v cowsay | sed 's/Commandline\: apt-get//g' | sed 's/remove/removed/g' | sed 's/install/installed/g' | sed 's/purge/purged/g' > /tmp/pasted
-			msg=$(pastebinit -u marshallcyber1 -p [[]] -i /tmp/pasted  | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g' )
-			
-cat $(locate bash_history) > /tmp/usershistory
-			msg=$(pastebinit -u marshallcyber1 -p [[]] -i /tmp/usershistory  | sed 's/\//%2F/g' | sed 's/\./%2E/g' | sed 's/\ /%20/g' )
-			break
-
-yum repolist all  &> /dev/null
-if [[ $? -eq 0 ]]; then
-    pkgmgr="yum"
+echo Identifying package manager
+echo Package Manager check >> /var/log/mikescript.log
+pkgmgr = "Nx"
+which pacman &> /dev/null
+if [ $? == 0 ]; then
+	pkgmgr = "pacman"
 fi
-apt-get -h &> /dev/null
-if [[ $? -eq 0 ]]; then
-    pkgmgr="apt"
-    echo $(date): $pkgmgr identified as package manager >> /var/log/mikescript.log
+which yum &> /dev/null
+if [ $? == 0 ]; then
+	pkgmgr = "yum"
 fi
-add-apt-repository "deb http://archive.canonical.com/ubuntu precise partner"
-add-apt-repository "deb http://archive.ubuntu.com/ubuntu precise multiverse main universe restricted"
-add-apt-repository "deb http://security.ubuntu.com/ubuntu/ precise-security universe main multiverse restricted"
-add-apt-repository "deb http://archive.ubuntu.com/ubuntu precise-updates universe main multiverse restricted"
+which apt &> /dev/null
+if [ $? == 0 ]; then
+	pkgmgr = "apt"
+fi
+echo $(date): Feelin bold, gonna try to go ahead and guess an OS.
+echo Guessing OS
+uname -a| grep -i Ubuntu
 if [ $? -eq 0 ]; then
-	msg=apt%20repositories%20successfully%20added
-	break
+	opsys = "Ubuntu"
 fi
+uname -a| grep -i Fedora
+if [ $? -eq 0 ]; then
+	opsys = "Fedora"
+fi
+uname -a| grep -i CentOS
+if [ $? -eq 0 ]; then
+	opsys = "CentOS"
+fi
+uname -a| grep -i SunOS
+if [ $? -eq 0 ]; then
+	opsys = "Shit"
+fi
+echo $(date): Verifying an internet connection with package manager >> /var/log/mikescript.log
+greenlit = 0
+if [ $pkgmgr == "pacman"]; then
+pacman -Ss cowsay
+	if [ $? -eq 0 ]; then
+		greenlit = 1
+	fi
+fi
+if [ $pkgmgr == "yum" ]; then
+	yum -y install cowsay 
+	if [ $? -eq 0 ]; then
+		greenlit = 1
+	fi
+fi
+if [ $pkgmgr == "apt" ]; then
+	apt-get install cowsay -y
+	if [ $? -eq 0 ]; then
+		greenlit = 1
+	fi
+fi
+if [ $greenlit -eq 0 ]; then
+	echo ******* CRITICAL ERROR: CANNOT USE $pkgmgr PACKAGE MANAGER *******
+fi
+if [ $? == "apt" ]; then
+	cd /var/log/apt
+	gunzip history.log.*.gz
+	cat history* | grep -i Commandline
+	cat history* | grep -i commandline > /var/log/mikescript.log
+fi
+cat history* | grep Commandline | grep -v pastebinit | grep -v cowsay | sed 's/Commandline\: apt-get//g' | sed 's/remove/removed/g' | sed 's/install/installed/g' | sed 's/purge/purged/g' > /tmp/pasted
+echo Forcefully clean the repository listing? \[y/N\]
+read sanity
+echo Finding sources
+locate sources.list
+if [ "$sanity" == "y" ];
+	uname -a | grep -i Ubuntu | grep -i 14.04
+	if [ $? -eq 0 ]; then
+	echo \#\#\#\#\#\# Ubuntu Main Repos
+	echo deb http://us.archive.ubuntu.com/ubuntu/ trusty main restricted universe multiverse 
+	echo deb-src http://us.archive.ubuntu.com/ubuntu/ trusty main restricted universe multiverse  > /etc/
+
+echo \#\#\#\#\#\# Ubuntu Update Repos
+echo deb http://us.archive.ubuntu.com/ubuntu/ trusty-security main restricted universe multiverse 
+echo deb http://us.archive.ubuntu.com/ubuntu/ trusty-updates main restricted universe multiverse 
+echo deb-src http://us.archive.ubuntu.com/ubuntu/ trusty-security main restricted universe multiverse 
+echo deb-src http://us.archive.ubuntu.com/ubuntu/ trusty-updates main restricted universe multiverse 
+
+echo \#\#\#\#\#\# Ubuntu Partner Repo
+echo deb http://archive.canonical.com/ubuntu trusty partner
+
+fi
+
+
+#add-apt-repository "deb http://archive.canonical.com/ubuntu precise partner"
+#add-apt-repository "deb http://archive.ubuntu.com/ubuntu precise multiverse main universe restricted"
+#add-apt-repository "deb http://security.ubuntu.com/ubuntu/ precise-security universe main multiverse restricted"
+#add-apt-repository "deb http://archive.ubuntu.com/ubuntu precise-updates universe main multiverse restricted"
+
 echo $(date): Finished adding repos >> /var/log/mikescript.log
 apt-get update &> /dev/null
 if [ $? -eq 1 ]; then
@@ -84,7 +139,7 @@ if [ -s /tmp/readmes ]; then
 				else
 					echo Cannot properly distinguish candidates
 				fi
-		fi	
+		fi
 else
 	if [ -z "$readmename" ]; then
 		echo no readme in root file sys
